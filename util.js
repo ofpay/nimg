@@ -199,7 +199,7 @@ var read_img = function (realPath, req, res) {
 };
 
 
-exports.identify = identify;
+
 exports.mkdirs = mkdirs;
 exports.getimgpath = getimgpath;
 exports.str_hash = str_hash;
