@@ -18,9 +18,7 @@ console.log(str);
 var filtype=util.get_extension('sdfsad.JPEG');
 console.log(filtype);
 
-console.log('=============================================');
-var ret=util.identify('/node/NImg/2.png');
-console.log(ret.format.toLowerCase());
+
 
 
 

@@ -47,7 +47,7 @@ app.get('/', routes.index);
 
 app.get(/^\/[0-9a-f]{32}$/, img.read);
 
-//上传
+
 app.post('/upload', upload.exec);
 
 

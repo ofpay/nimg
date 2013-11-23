@@ -3,25 +3,8 @@ var path = require("path");
 var config = require("./config");
 var im = require('imagemagick');
 
-var check_dir = function (dir) {
 
-};
 
-/*******************
- * 校验图片
- * @param imgpath
- */
-var identify = function (imgpath) {
-
-    return im.identify(imgpath, function (err, features) {
-        if (err) {
-            console.error("identify err:" + imgpath);
-            throw err;
-        }
-        console.log(features);
-    });
-
-};
 
 var get_extension = function (filename) {
     var i = filename.lastIndexOf('.');
