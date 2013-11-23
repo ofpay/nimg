@@ -1,0 +1,9 @@
+extends layout
+
+block content
+  h1= title
+  p Welcome to #{title}
+  form(enctype='multipart/form-data', action='/upload', method='post')
+      | Choose file:
+      input(name='userfile', type='file')
+      input(type='submit', value='upload')
