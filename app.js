@@ -1,4 +1,3 @@
-
 /**
  * Module dependencies.
  */
@@ -11,48 +10,65 @@ var http = require('http');
 var path = require('path');
 var config = require("./config");
 
-exports.apppath = __dirname;
-
-var fs=require('fs');
-var errorLog=fs.createWriteStream(config.errorlog,{flags:'a'});
+var fs = require('fs');
+var errorLog = fs.createWriteStream(config.errorlog, {flags: 'a'});
 
 process.on('uncaughtException', function (err) {
-    errorLog.write('['+new Date+']'+'Caught exception: ' + err);
+    errorLog.write('[' + new Date + ']' + 'Caught exception: ' + err);
 });
 
-var app = express();
+var start = function () {
+    var app = express();
 
-// all environments
-
-app.set('views', __dirname + '/views');
-app.set('view engine', 'jade');
-app.use(express.bodyParser({
-    uploadDir:config.tmproot
-}));
-app.use(express.favicon());
-app.use(express.logger('dev'));
-app.use(express.bodyParser());
-app.use(express.methodOverride());
-app.use(app.router);
-app.use(express.static(path.join(__dirname, 'public')));
+    app.set('views', __dirname + '/views');
+    app.set('view engine', 'jade');
+    app.use(express.bodyParser({
+        uploadDir: config.tmproot
+    }));
+    app.use(express.favicon());
+    app.use(express.logger('dev'));
+    app.use(express.bodyParser());
+    app.use(express.methodOverride());
+    app.use(app.router);
+    app.use(express.static(path.join(__dirname, 'public')));
 
 
-// development only
-if ('development' == app.get('env')) {
-  app.use(express.errorHandler());
+    // development only
+    if ('development' == app.get('env')) {
+        app.use(express.errorHandler());
+    }
+
+    app.get('/', routes.index);
+
+
+    app.get(/^\/[0-9a-f]{32}$/, img.read);
+
+
+    app.post('/upload', upload.exec);
+
+	
+    http.createServer(app).listen(config.port, function () {
+        console.log('server listening:' + config.port);
+    });
 }
 
-app.get('/', routes.index);
-
-
-app.get(/^\/[0-9a-f]{32}$/, img.read);
-
-
-app.post('/upload', upload.exec);
-
-
-http.createServer(app).listen(config.port, function(){
-  console.log('server listening:' + config.port);
-});
-
-
+/******************************************************************
+ * use cluster
+ */
+var cpuNums = require('os').cpus().length;
+var cluster = require('cluster');
+var workers = {};
+if (cluster.isMaster) {
+    cluster.on('death', function (worker) {
+        delete workers[worker.pid];
+        worker = cluster.fork();
+        workers[worker.pid] = worker;
+    });
+    for (var i = 0; i < cpuNums; i++) {
+        var worker = cluster.fork();
+        
+        workers[worker.pid] = worker;
+    }
+} else {
+    start();
+}
