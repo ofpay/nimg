@@ -4,8 +4,6 @@ var config = require("./config");
 var im = require('imagemagick');
 
 
-
-
 var get_extension = function (filename) {
     var i = filename.lastIndexOf('.');
     return (i < 0) ? '' : filename.substr(i + 1).toLowerCase();
@@ -27,23 +25,56 @@ var wrap_msg = function (code, msg, data) {
     return json;
 }
 
-/***************************
+/***********************
+ * 根据规则解析路径
+ * @param imgPath  '/01/1ca1be3a020d9e4a2e5b6af1f80db92b.jpeg/convert'
+ */
+var decode_imgpath = function (imgPath) {
+    var c;
+    var a = imgPath.substr(1).split("/");
+    var r = a[0];//user path
+    var img = a[1];//img
+    if (a.length > 2) {
+        c = a[2].split("-")[1];//command
+    }
+    a = img.split(".");
+    var anchor = a[0];//anchor
+    var t = a[1];//img type
+    a = anchor.split("-");//md5
+    var d = a[0];
+
+    var w = 0;
+    var h = 0;
+    if (a.length > 2) {
+        w = parseInt(a[1]);
+        h = parseInt(a[2]);
+    }
+    console.log('  r:' + r + '  d:' + d + '  w:' + w + '  h:' + h + '  t:' + t + '  c:' + c);
+    return {
+        r: r,
+        d: d,
+        w: w,
+        h: h,
+        t: t,
+        c: c
+    }
+}
+
+/********************************
  * 根据md5值返回图片存储路径
- * @param d
+ * @param r  userpash
+ * @param d  md5
+ * @param t  type
+ * @param w  width
+ * @param h  height
  * @returns {string}
  */
-var getimgpath = function (d, w, h) {
-    var source = '0*0p';
-    var imgroot = config.imgroot;
+var getimgpath = function (r, d, t, w, h) {
     var dir1 = str_hash(d, 0);
     var dir2 = str_hash(d, 3);
-    var imgPath = imgroot + '/' + dir1 + '/' + dir2 + '/' + d;
+    var imgPath = config.imgroot + '/' + r + '/' + dir1 + '/' + dir2 + '/' + d + '-' + t;
 
-    if (w == 0 && h == 0) {
-        imgPath = imgPath + '/' + source;
-    } else {
-        imgPath = imgPath + '/' + w + '*' + h + 'p';
-    }
+    imgPath = imgPath + '/' + w + '*' + h + 'p';
     return imgPath;
 }
 
@@ -71,7 +102,7 @@ var str_hash = function (str, index) {
  */
 var mkdirs = function (p, mode, made) {
     if (mode === undefined) {
-        mode = 0777 & (~process.umask());
+        mode = 0776 & (~process.umask());
     }
     if (!made) made = null;
 
@@ -83,15 +114,13 @@ var mkdirs = function (p, mode, made) {
         made = made || p;
     }
     catch (err0) {
+
         switch (err0.code) {
             case 'ENOENT' :
                 made = mkdirs(path.dirname(p), mode, made);
                 mkdirs(p, mode, made);
                 break;
 
-            // In the case of any other error, just see if there's a dir
-            // there already. If so, then hooray! If not, then something
-            // is borked.
             default:
                 var stat;
                 try {
@@ -108,6 +137,58 @@ var mkdirs = function (p, mode, made) {
     return made;
 }
 
+
+/*****************************
+ * 处理图片
+ * @param srcPath
+ * @param cmd
+ * @param parm
+ * @param req
+ * @param res
+ */
+var img_convert=function(srcPath,cmd,parm,req,res){
+    im.convert([srcPath, '-' + cmd, parm, srcPath],
+        function (err, stdout) {
+            if (err) {
+                var json = wrap_msg(303, 'exec fail!');
+                res.json(json);
+                res.end();
+            } else {
+                var json = wrap_msg(200, 'exec ok!');
+                res.json(json);
+                res.end();
+                console.log('stdout:', stdout);
+            }
+        });
+};
+
+/************
+ * 删除图片
+ * @param imgpath
+ */
+var del_img = function (imgpath,req,res) {
+    console.log('del_img:' + imgpath);
+    fs.unlink(imgpath, function (err) {
+        if (err) {
+            console.error("del_img unlink error:" + err);
+
+            if (res) {
+                var json = wrap_msg(300, 'delete err!',null);
+                res.json(json);
+                res.end();
+            }
+
+        } else {
+            console.log('del_img unlink success! tmpImg:' + imgpath);
+            if (res) {
+                var json = wrap_msg(200, 'delete success!',null);
+                res.json(json);
+                res.end();
+            }
+        }
+    });
+};
+
 /****************************
  * 存储图片文件
  * @param tmpImg
@@ -117,27 +198,70 @@ var save_img = function (tmpImg, targetImg) {
     var index = targetImg.lastIndexOf('/');
     //提取目录路径
     var dirs = targetImg.substr(0, index);
+
+
     //创建目录
-    mkdirs(dirs, 0777);
+    mkdirs(dirs, 0776, null);
 
     fs.rename(tmpImg, targetImg, function (err) {
+        console.log('tmpImg:' + tmpImg);
+        console.log('targetImg:' + targetImg);
+
         if (err) {
             console.error("saveImg rename err:" + err);
         } else {
             console.log('saveImg success! targetImg:' + targetImg);
             //删除临时文件夹文件,
-            fs.unlink(tmpImg, function () {
-                if (err) {
-                    console.error("saveImg unlink error:" + err);
-                } else {
-                    console.log('unlink success! tmpImg:' + tmpImg);
-                }
-            });
+            del_img(tmpImg, null, null);
         }
     });
 }
 
-var read_img = function (realPath, req, res) {
+
+/************************
+ * Reads the specified size
+ * @param srcPath
+ * @param dstPath
+ * @param filttype
+ * @param width
+ * @param height
+ * @param req
+ * @param res
+ * @private
+ */
+var read_size_img = function (srcPath, dstPath, f, w, h, req, res) {
+    fs.exists(dstPath, function (exists) {
+        if (exists) {
+            console.log('dstPath exists!');
+            read_img(dstPath, f, req, res);
+        } else {
+            var resizeData = {
+                srcPath: srcPath,
+                dstPath: dstPath,
+                width: w,
+                height: h
+            };
+
+            im.resize(resizeData, function (err, stdout, stderr) {
+                if (err) {
+                    res.send(500, err.message);
+                    res.end;
+                }
+                console.log('resize success! dstPath:' + resizeData.dstPath);
+                read_img(resizeData.dstPath, f, req, res);
+            });
+        }
+    });
+};//end fun
+
+/****************************
+ *  reead image
+ * @param realPath
+ * @param filetype
+ * @param req
+ * @param res
+ */
+var read_img = function (realPath, filetype, req, res) {
     fs.stat(realPath, function (err, stats) {
         if (err) {
             console.log('err:' + err);
@@ -150,10 +274,7 @@ var read_img = function (realPath, req, res) {
                 res.write("This req URL " + realPath + " was not found on this server.");
                 res.end();
             } else {
-                //var ext = 'jpeg';// path.extname(realPath);
-                //ext = ext ? ext.slice(1) : 'unknown';
-                var contentType = "image/jpeg";//mime.types[ext] || "image/jpeg";
-
+                var contentType = config.imgtypes[filetype] || "image/jpeg";
                 res.setHeader("Content-Type", contentType);
                 res.setHeader('Content-Length', stats.size);
 
@@ -198,8 +319,10 @@ var read_img = function (realPath, req, res) {
     });
 };
 
-
-
+exports.img_convert=img_convert;
+exports.read_size_img = read_size_img;
+exports.del_img = del_img;
+exports.decode_imgpath = decode_imgpath;
 exports.mkdirs = mkdirs;
 exports.getimgpath = getimgpath;
 exports.str_hash = str_hash;

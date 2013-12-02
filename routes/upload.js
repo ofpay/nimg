@@ -5,6 +5,9 @@ var crypto=require("crypto");
 
 
 exports.exec = function (req, res) {
+    var a = req.path.substr(1).split("/");
+    var r=a[0];//get userpath from req path
+
     var imgpath;
 
     if (!req.files.userfile) {
@@ -15,24 +18,25 @@ exports.exec = function (req, res) {
     var tmp_path = req.files.userfile.path;
     console.log('tmp_path:' + tmp_path);
 
-    var fileName = req.files.userfile.name;
-    console.log('fileName:'+fileName);
-    if (!fileName) {
-        var json=util.wrap_msg(300,'not filename!');
+    var n = req.files.userfile.name;
+    console.log('fileName:'+n);
+    if (!n) {
+        var json=util.wrap_msg(300,'not get filename!');
         res.json(json);
         res.end();
     }
 
-    var filetype=util.get_extension(fileName);
-    if(!config.imgtypes[filetype]){
-        var json=util.wrap_msg(300,'filetype error,not supported '+filetype);
+    var t=util.get_extension(n);
+    console.log('fileType:'+t);
+    if(!config.imgtypes[t]){
+        var json=util.wrap_msg(300,'filetype error,not supported '+t);
         res.json(json);
         res.end();
     }
 
-    var filesize = req.files.userfile.size;
-    console.log('filesize:'+filesize);
-    if(filesize>config.maxFileSize){
+    var s = req.files.userfile.size;
+    console.log('filesize:'+s);
+    if(s>config.maxFileSize){
         var json=util.wrap_msg(300,'file to large,no more than '+config.maxFileSize);
         res.json(json);
         res.end();
@@ -57,12 +61,12 @@ exports.exec = function (req, res) {
 
     readstream.on('end', function () {
         var d = md5sum.digest('hex');
-        imgpath = util.getimgpath(d, 0, 0);
+        imgpath = util.getimgpath(r,d,t, 0, 0);
 
         console.log('imgpath:' + imgpath);
-        console.log('res send md5:' + d);
 
-        var json=util.wrap_msg(200,'upload success!',{md5:d});
+        var url=r+'/'+d+'.'+t;
+        var json=util.wrap_msg(200,'upload success!',{t:t,userpath:r,md5:d,url:url});
         res.json(json);
         res.end();
     });

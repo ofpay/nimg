@@ -1,5 +1,5 @@
 # nodeServer
-DAEMON="node --stack_size=102400 app.js"
+DAEMON="node --stack_size=51200 app.js"
 PIDFILE=NODEPID
 NAME=NImg
 

@@ -1,5 +1,4 @@
 var fs = require("fs");
-var im = require('imagemagick');
 var util = require("../util");
 
 /************
@@ -8,43 +7,19 @@ var util = require("../util");
  * @param res
  */
 exports.read = function (req, res) {
-    var d = req.path.substr(1);
-    var w = req.query.w;
-    var h = req.query.h;
+    var a = util.decode_imgpath(req.path);
+    var srcPath = util.getimgpath(a.r, a.d, a.t, 0, 0);
 
-    var srcPath = util.getimgpath(d, 0, 0);
-
-    if (w && h && parseInt(w) != 'NaN' && parseInt(h) != 'NaN') {
-        var dstPath = util.getimgpath(d, w, h);
+    if (a.w && a.h) {
+        var dstPath = util.getimgpath(a.r, a.d, a.t, a.w, a.h);
 
         console.log('resize srcPath:' + srcPath);
         console.log('resize dstPath:' + dstPath);
 
-        fs.exists(dstPath, function (exists) {
-            if (exists) {
-                console.log('dstPath exists!');
-                util.read_img(dstPath, req, res);
-            } else {
-                var resizeData = {
-                    srcPath: srcPath,
-                    dstPath: dstPath,
-                    width: w,
-                    height: h
-                };
-
-                im.resize(resizeData, function (err, stdout, stderr) {
-                    if (err) {
-                        return res.send(500, err.message);
-                    }
-                    console.log('resize success! dstPath:' + resizeData.dstPath);
-                    util.read_img(resizeData.dstPath, req, res);
-                });
-            }
-        });
-
-
+        util.read_size_img(srcPath, dstPath, a.t, a.w, a.h, req, res);
     } else {
-        util.read_img(srcPath, req, res);
+        util.read_img(srcPath, a.t, req, res);
     }
 };
+
 

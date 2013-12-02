@@ -5,6 +5,7 @@
 var express = require('express');
 var routes = require('./routes');
 var img = require('./routes/image');
+var manage = require('./routes/manage');
 var upload = require('./routes/upload');
 var http = require('http');
 var path = require('path');
@@ -38,15 +39,21 @@ var start = function () {
         app.use(express.errorHandler());
     }
 
+    //index
     app.get('/', routes.index);
 
+    //get img
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?\.(jpg|jpeg|gif|png)$/, img.read);
 
-    app.get(/^\/[0-9a-f]{32}$/, img.read);
+
+    //img manage
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize)$/, manage.exec);
 
 
-    app.post('/upload', upload.exec);
+    //img upload
+    app.post(/^\/\d{1,6}\/upload$/, upload.exec);
 
-	
+
     http.createServer(app).listen(config.port, function () {
         console.log('server listening:' + config.port);
     });
