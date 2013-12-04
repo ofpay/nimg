@@ -211,8 +211,6 @@ var save_img = function (tmpImg, targetImg) {
             console.error("saveImg rename err:" + err);
         } else {
             console.log('saveImg success! targetImg:' + targetImg);
-            //删除临时文件夹文件,
-            del_img(tmpImg, null, null);
         }
     });
 }
