@@ -20,4 +20,4 @@ NImg 是基于[ZImg](https://github.com/buaazp/zimg)的nodejs实现。
 
 
 
-=============
+==================
