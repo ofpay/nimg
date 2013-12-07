@@ -169,7 +169,7 @@ api
     
 ```json
     {
-      "code": 303,
+      "code": 301,
       "msg": "exec fail"
     }
 ```
