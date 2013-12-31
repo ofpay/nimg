@@ -8,7 +8,7 @@ var util = require("../util");
  */
 exports.exec = function (req, res) {
     var a = util.decode_imgpath(req.path);
-    var srcPath = util.getimgpath(a.r, a.d, a.t, a.w, a.h);
+    var srcPath = util.getimgpath(a.r, a.d, a.t, a.w, a.h, a.x);
     console.log('srcPath:' + srcPath);
 
     fs.exists(srcPath, function (exists) {
