@@ -15,7 +15,8 @@ var fs = require('fs');
 var errorLog = fs.createWriteStream(config.errorlog, {flags: 'a'});
 
 process.on('uncaughtException', function (err) {
-    errorLog.write('[' + new Date + ']' + 'Caught exception: ' + err);
+    console.trace(err);
+    errorLog.write('\n[' + new Date + ']' + 'Caught exception: ' + err);
 });
 
 var start = function () {
@@ -43,11 +44,11 @@ var start = function () {
     app.get('/', routes.index);
 
     //get img
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?\.(jpg|jpeg|gif|png)$/, img.read);
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f)?\.(jpg|jpeg|gif|png)$/, img.read);
 
 
     //img manage
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize)$/, manage.exec);
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize|info)$/, manage.exec);
 
 
     //img upload
@@ -55,7 +56,7 @@ var start = function () {
 
 
     http.createServer(app).listen(config.port, function () {
-        console.log('server listening:' + config.port);
+        console.log('%s:%s',new Date(),'server listening:' + config.port);
     });
 }
 

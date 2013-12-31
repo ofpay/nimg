@@ -72,7 +72,7 @@ exports.exec = function (req, res) {
     });
 
     readstream.on('error', function (e) {
-        console.log('err:' + e);
+        console.log('%s:%s',new Date(),'err:' + e);
         var json=util.wrap_msg(300,'upload err!');
         res.json(json);
         res.end();

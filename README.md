@@ -80,7 +80,7 @@ api
 ========================
 
 ###名词解释###
-**userpath**  用户目录，NImg支持多用户系统，因此使用userpath来区分用户目录
+**userpath**  用户目录，NImg支持多用户系统，使用userpath来区分用户目录
 
 **md5**   根据图片信息得到md5值
 
@@ -94,7 +94,10 @@ api
 
   - 原图url：{userpath}/{md5}.{t}  or  {userpath}/{md5}-0-0.{t}
  
-  - 裁图url:  {userpath}/{md5}-{w}-{h}.{t} 
+  - 等比例裁图url:  {userpath}/{md5}-{w}-{h}.{t} 
+
+  - 强制裁图url:  {userpath}/{md5}-{w}-{h}-f.{t} 
+
 
 **act**  图像处理命令   
 
@@ -105,6 +108,9 @@ api
   -  tright 右旋90度
   
   -  resize 缩放，注意：此操作是对当前资源做出修改，不生成新文件
+
+  -  info 返回图片信息，高度，宽度，图片大小
+
 
 **param**  命令参数  
 

@@ -49,14 +49,22 @@ var decode_imgpath = function (imgPath) {
         w = parseInt(a[1]);
         h = parseInt(a[2]);
     }
-    console.log('  r:' + r + '  d:' + d + '  w:' + w + '  h:' + h + '  t:' + t + '  c:' + c);
+
+    var x = '';
+    //force resize by width and height
+    if (a.length > 3) {
+        x = a[3];
+    }
+
+    console.log('  r:' + r + '  d:' + d + '  w:' + w + '  h:' + h + '  t:' + t + '  c:' + c + '  x:' + x);
     return {
         r: r,
         d: d,
         w: w,
         h: h,
         t: t,
-        c: c
+        c: c,
+        x: x
     }
 }
 
@@ -69,12 +77,12 @@ var decode_imgpath = function (imgPath) {
  * @param h  height
  * @returns {string}
  */
-var getimgpath = function (r, d, t, w, h) {
+var getimgpath = function (r, d, t, w, h, x) {
     var dir1 = str_hash(d, 0);
     var dir2 = str_hash(d, 3);
     var imgPath = config.imgroot + '/' + r + '/' + dir1 + '/' + dir2 + '/' + d + '-' + t;
 
-    imgPath = imgPath + '/' + w + '*' + h + 'p';
+    imgPath = imgPath + '/' + w + '*' + h + ((x) ? x : "") + 'p';
     return imgPath;
 }
 
@@ -146,11 +154,11 @@ var mkdirs = function (p, mode, made) {
  * @param req
  * @param res
  */
-var img_convert=function(srcPath,cmd,parm,req,res){
+var img_convert = function (srcPath, cmd, parm, req, res) {
     im.convert([srcPath, '-' + cmd, parm, srcPath],
         function (err, stdout) {
             if (err) {
-                var json = wrap_msg(303, 'exec fail!');
+                var json = wrap_msg(301, 'exec fail!');
                 res.json(json);
                 res.end();
             } else {
@@ -162,18 +170,47 @@ var img_convert=function(srcPath,cmd,parm,req,res){
         });
 };
 
+/**********************
+ * 读取图像的信息
+ * @param imgpath
+ * @param req
+ * @param res
+ */
+var img_info = function (imgpath, callback) {
+    im.identify(imgpath, function (err, features) {
+        var data = {};
+        if (!err) {
+            console.log(JSON.stringify(features));
+            data = {
+                width: features.width,
+                height: features.height,
+                filesize: features.filesize,
+//                    origin_name:features.origin_name,
+//                    ext:features.ext,
+//                    owner:features.owner.
+                createdate: features.properties['create-date'],
+                modifydate: features.properties['modify-date'],
+                format: features.format ? features.format.toLowerCase() : ''
+
+            };
+        }
+
+        callback(err, data);
+    });
+};
+
 /************
  * 删除图片
  * @param imgpath
  */
-var del_img = function (imgpath,req,res) {
+var del_img = function (imgpath, req, res) {
     console.log('del_img:' + imgpath);
     fs.unlink(imgpath, function (err) {
         if (err) {
             console.error("del_img unlink error:" + err);
 
             if (res) {
-                var json = wrap_msg(300, 'delete err!',null);
+                var json = wrap_msg(301, 'delete err!', null);
                 res.json(json);
                 res.end();
             }
@@ -181,7 +218,7 @@ var del_img = function (imgpath,req,res) {
         } else {
             console.log('del_img unlink success! tmpImg:' + imgpath);
             if (res) {
-                var json = wrap_msg(200, 'delete success!',null);
+                var json = wrap_msg(200, 'delete success!', null);
                 res.json(json);
                 res.end();
             }
@@ -204,13 +241,14 @@ var save_img = function (tmpImg, targetImg) {
     mkdirs(dirs, 0776, null);
 
     fs.rename(tmpImg, targetImg, function (err) {
-        console.log('tmpImg:' + tmpImg);
-        console.log('targetImg:' + targetImg);
+        console.log('%s:%s', new Date(), 'tmpImg:' + tmpImg);
+        console.log('%s:%s', new Date(), 'targetImg:' + targetImg);
 
         if (err) {
-            console.error("saveImg rename err:" + err);
+            console.error('%s:%s', new Date(), "saveImg rename err:" + err);
+            console.trace(err);
         } else {
-            console.log('saveImg success! targetImg:' + targetImg);
+            console.log('%s:%s', new Date(), 'saveImg success! targetImg:' + targetImg);
         }
     });
 }
@@ -227,10 +265,10 @@ var save_img = function (tmpImg, targetImg) {
  * @param res
  * @private
  */
-var read_size_img = function (srcPath, dstPath, f, w, h, req, res) {
+var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
     fs.exists(dstPath, function (exists) {
         if (exists) {
-            console.log('dstPath exists!');
+            console.log('%s:%s', new Date(), 'dstPath exists!');
             read_img(dstPath, f, req, res);
         } else {
             var resizeData = {
@@ -240,14 +278,18 @@ var read_size_img = function (srcPath, dstPath, f, w, h, req, res) {
                 height: h
             };
 
-            im.resize(resizeData, function (err, stdout, stderr) {
-                if (err) {
-                    res.send(500, err.message);
-                    res.end;
-                }
-                console.log('resize success! dstPath:' + resizeData.dstPath);
-                read_img(resizeData.dstPath, f, req, res);
-            });
+            im.convert([srcPath, '-resize', w + 'X' + h + (x == 'f' ? '!' : ''), dstPath],
+                function (err, stdout) {
+                    if (err) {
+                        console.trace(err);
+                        res.writeHead(404, "Not Found", {'Content-Type': 'text/plain'});
+                        res.write("This image file was not found on this server.");
+                        res.end();
+                    } else {
+                        console.log('%s:%s', new Date(), 'resize success! dstPath:' + resizeData.dstPath);
+                        read_img(resizeData.dstPath, f, req, res);
+                    }
+                });
         }
     });
 };//end fun
@@ -264,12 +306,12 @@ var read_img = function (realPath, filetype, req, res) {
         if (err) {
             console.log('err:' + err);
             res.writeHead(404, "Not Found", {'Content-Type': 'text/plain'});
-            res.write("This req URL " + realPath + " was not found on this server.");
+            res.write("This Image file was not found on this server.");
             res.end();
         } else {
             if (stats.isDirectory()) {
                 res.writeHead(404, "Not Found", {'Content-Type': 'text/plain'});
-                res.write("This req URL " + realPath + " was not found on this server.");
+                res.write("This image file was not found on this server~");
                 res.end();
             } else {
                 var contentType = config.imgtypes[filetype] || "image/jpeg";
@@ -317,7 +359,7 @@ var read_img = function (realPath, filetype, req, res) {
     });
 };
 
-exports.img_convert=img_convert;
+exports.img_convert = img_convert;
 exports.read_size_img = read_size_img;
 exports.del_img = del_img;
 exports.decode_imgpath = decode_imgpath;
@@ -328,5 +370,8 @@ exports.save_img = save_img;
 exports.wrap_msg = wrap_msg;
 exports.get_extension = get_extension;
 exports.read_img = read_img;
+exports.img_info = img_info;
+
+
 
 
