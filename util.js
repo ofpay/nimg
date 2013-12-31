@@ -271,13 +271,6 @@ var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
             console.log('%s:%s', new Date(), 'dstPath exists!');
             read_img(dstPath, f, req, res);
         } else {
-            var resizeData = {
-                srcPath: srcPath,
-                dstPath: dstPath,
-                width: w,
-                height: h
-            };
-
             im.convert([srcPath, '-resize', w + 'X' + h + (x == 'f' ? '!' : ''), dstPath],
                 function (err, stdout) {
                     if (err) {
@@ -287,7 +280,7 @@ var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
                         res.end();
                     } else {
                         console.log('%s:%s', new Date(), 'resize success! dstPath:' + resizeData.dstPath);
-                        read_img(resizeData.dstPath, f, req, res);
+                        read_img(dstPath, f, req, res);
                     }
                 });
         }
