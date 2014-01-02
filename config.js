@@ -6,6 +6,8 @@ exports.port=9000;
 exports.appname='Nimg';
 exports.maxFileSize=1024*1024;//1024kb 1mb
 exports.maxSide=800; //最大截图边长
+exports.minSide=30; //最小截图边长
+
 
 
 exports.imgtypes={

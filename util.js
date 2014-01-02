@@ -49,10 +49,15 @@ var decode_imgpath = function (imgPath) {
         w = parseInt(a[1]);
         if(w>config.maxSide){
             w=config.maxSide;
+        }else if(w<config.minSide){
+            w=config.minSide;
         }
+
         h = parseInt(a[2]);
         if(h>config.maxSide){
             h=config.maxSide;
+        }else if(h<config.minSide){
+            h=config.minSide;
         }
     }
 
@@ -357,6 +362,7 @@ var read_img = function (realPath, filetype, req, res) {
         }
     });
 };
+
 
 exports.img_convert = img_convert;
 exports.read_size_img = read_size_img;
