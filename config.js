@@ -5,6 +5,8 @@ exports.errorlog='/node/error.log'; //程序错误日志，记录
 exports.port=9000;
 exports.appname='Nimg';
 exports.maxFileSize=1024*1024;//1024kb 1mb
+exports.maxSide=800; //最大截图边长
+
 
 exports.imgtypes={
         "gif": "image/gif",

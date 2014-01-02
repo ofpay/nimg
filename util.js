@@ -47,7 +47,13 @@ var decode_imgpath = function (imgPath) {
     var h = 0;
     if (a.length > 2) {
         w = parseInt(a[1]);
+        if(w>config.maxSide){
+            w=config.maxSide;
+        }
         h = parseInt(a[2]);
+        if(h>config.maxSide){
+            h=config.maxSide;
+        }
     }
 
     var x = '';
@@ -279,7 +285,7 @@ var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
                         res.write("This image file was not found on this server.");
                         res.end();
                     } else {
-                        console.log('%s:%s', new Date(), 'resize success! dstPath:' + resizeData.dstPath);
+                        console.log('%s:%s', new Date(), 'resize success! dstPath:' + dstPath);
                         read_img(dstPath, f, req, res);
                     }
                 });
