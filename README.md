@@ -51,6 +51,7 @@ exports.errorlog='/node/log/error.log'; //程序错误日志，记录
 exports.port=9000;  //http端口号
 exports.appname='NImg';
 exports.maxFileSize=1024*1024;//上传最大限制单位字节 1024kb 1mb
+exports.maxSide=800; //最大截图边长
 
 //支持图像文件类型
 exports.imgtypes={
