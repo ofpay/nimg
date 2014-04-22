@@ -12,7 +12,8 @@
   "dependencies": {
     "express": "3.3.5",
     "jade": "*",
-    "imagemagick":"*"
+    "imagemagick":"*",
+    "async":"*"
   },
    "keywords":[
     "server",

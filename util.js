@@ -2,6 +2,7 @@ var fs = require("fs");
 var path = require("path");
 var config = require("./config");
 var im = require('imagemagick');
+var async = require('async');
 
 
 var get_extension = function (filename) {
@@ -282,7 +283,7 @@ var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
             console.log('%s:%s', new Date(), 'dstPath exists!');
             read_img(dstPath, f, req, res);
         } else {
-            im.convert([srcPath, '-resize', w + 'X' + h + (x == 'f' ? '!' : ''), dstPath],
+           im.convert([srcPath, '-resize', w + 'X' + h + (x === 'f' ? '!' : (x === 's' ? '^' :'')), dstPath],
                 function (err, stdout) {
                     if (err) {
                         console.trace(err);
@@ -364,6 +365,40 @@ var read_img = function (realPath, filetype, req, res) {
 };
 
 
+/*********************
+ * 获取文件夹下所有文件大小,返回字节数
+ * @param item
+ * @param cb
+ */
+function read_size(item, cb) {
+  fs.lstat(item, function(err, stats) {
+    var total = stats.size;
+
+    if (!err && stats.isDirectory()) {
+      fs.readdir(item, function(err, list) {
+        if (err) return cb(err);
+
+        async.forEach(
+          list,
+          function(diritem, callback) {
+            read_size(path.join(item, diritem), function(err, size) {
+              total += size;
+              callback(err);
+            });
+          },
+          function(err) {
+            cb(err, total);
+          }
+        );
+      });
+    }
+    else {
+      cb(err, total);
+    }
+  });
+}
+
+
 exports.img_convert = img_convert;
 exports.read_size_img = read_size_img;
 exports.del_img = del_img;
@@ -376,6 +411,7 @@ exports.wrap_msg = wrap_msg;
 exports.get_extension = get_extension;
 exports.read_img = read_img;
 exports.img_info = img_info;
+exports.read_size = read_size;
 
 
 

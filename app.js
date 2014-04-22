@@ -44,11 +44,13 @@ var start = function () {
     app.get('/', routes.index);
 
     //get img
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f)?\.(jpg|jpeg|gif|png)$/, img.read);
-
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)$/, img.read);
 
     //img manage
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize|info)$/, manage.exec);
+    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize|info|crop)$/, manage.exec);
+
+    //dir manage
+    app.get(/^\/\d{1,6}\/(tsize)$/, manage.dir);
 
 
     //img upload
