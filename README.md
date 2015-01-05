@@ -96,10 +96,13 @@ api
 
   - 原图url：{userpath}/{md5}.{t}  or  {userpath}/{md5}-0-0.{t}
  
-  - 等比例裁图url:  {userpath}/{md5}-{w}-{h}.{t} 
+  - 等比例缩放图url:  {userpath}/{md5}-{w}-{h}.{t}
 
-  - 强制裁图url:  {userpath}/{md5}-{w}-{h}-f.{t} 
+  - 强制缩放图url:  {userpath}/{md5}-{w}-{h}-f.{t}
 
+  - 根据高边等比例缩放url:  {userpath}/{md5}-0-{h}-f.{t}
+
+  - 根据宽边等比例缩放url:  {userpath}/{md5}-{w}-0-f.{t}
 
 **act**  图像处理命令   
 
