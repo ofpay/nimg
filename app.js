@@ -44,17 +44,22 @@ var start = function () {
     app.get('/', routes.index);
 
     //get img
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)$/, img.read);
+    app.get(/^\/\d{1,9}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)$/, img.read);
+
 
     //img manage
-    app.get(/^\/\d{1,6}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize|info|crop)$/, manage.exec);
-
-    //dir manage
-    app.get(/^\/\d{1,6}\/(tsize)$/, manage.dir);
+    app.get(/^\/\d{1,9}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)\/manage-(tleft|tright|del|resize|info)$/, manage.exec);
 
 
     //img upload
-    app.post(/^\/\d{1,6}\/upload$/, upload.exec);
+    app.post(/^\/\d{1,9}\/upload$/, upload.exec);
+
+	//nginx monitor
+	app.get('/_jiankong.jsp', function (req, res) {
+		res.send(200, 'ok');
+		res.end();
+	});
+
 
 
     http.createServer(app).listen(config.port, function () {
@@ -62,9 +67,12 @@ var start = function () {
     });
 }
 
+
+start();
+
 /******************************************************************
  * use cluster
- */
+
 var cpuNums = require('os').cpus().length;
 var cluster = require('cluster');
 var workers = {};
@@ -82,3 +90,4 @@ if (cluster.isMaster) {
 } else {
     start();
 }
+ */
