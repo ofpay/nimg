@@ -100,9 +100,9 @@ api
 
   - 强制缩放图url:  {userpath}/{md5}-{w}-{h}-f.{t}
 
-  - 根据高边等比例缩放url:  {userpath}/{md5}-0-{h}-f.{t}
+  - 根据高边等比例缩放url:  {userpath}/{md5}-0-{h}-s.{t}
 
-  - 根据宽边等比例缩放url:  {userpath}/{md5}-{w}-0-f.{t}
+  - 根据宽边等比例缩放url:  {userpath}/{md5}-{w}-0-s.{t}
 
 **act**  图像处理命令   
 
