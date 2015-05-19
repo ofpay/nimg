@@ -32,11 +32,11 @@ NImg 是基于[ZImg](https://github.com/buaazp/zimg)的nodejs实现。
      wget  https://github.com/ofpay/nimg/archive/master.zip -O nimg.zip
 
    \#解压
-    
+
     uzip nimg.zip
 
    \#安装依赖模组
-   
+
     cd nimg-master
     npm install
 
@@ -65,7 +65,7 @@ exports.imgtypes={
 ```
 
   \#启动
- 
+
     sh nimg.sh start
 
   \#查看控制台输出
@@ -95,7 +95,7 @@ api
 **url**  图像访问路径，上传时由接口返回
 
   - 原图url：{userpath}/{md5}.{t}  or  {userpath}/{md5}-0-0.{t}
- 
+
   - 等比例缩放图url:  {userpath}/{md5}-{w}-{h}.{t}
 
   - 强制缩放图url:  {userpath}/{md5}-{w}-{h}-f.{t}
@@ -104,20 +104,20 @@ api
 
   - 根据宽边等比例缩放url:  {userpath}/{md5}-{w}-0-s.{t}
 
-**act**  图像处理命令   
+**act**  图像处理命令
 
-  -  del 删除图像,不需要参数  
-  
+  -  del 删除图像,不需要参数
+
   -  tleft 左旋90度
-  
+
   -  tright 右旋90度
-  
+
   -  resize 缩放，注意：此操作是对当前资源做出修改，不生成新文件
 
   -  info 返回图片信息，高度，宽度，图片大小
 
 
-**param**  命令参数  
+**param**  命令参数
 
   -  调用resize时，需要. 等比例缩放示例: 500X500  强制缩放:500X500!
 
@@ -133,18 +133,37 @@ api
 
 1.图片访问地址   限制：无
 
-	调用地址： http://nimg/{url}   
+  调用地址： http://nimg/{url}
 
+  method:get
 
-	返回： 图像文件
+  返回： 图像文件
 
 
 2.上传api  限制：内网调用
 
-	 调用地址： http://nimg/{userpath}/upload
+   调用地址： http://nimg/{userpath}/upload
 
-	 成功返回
-	 
+   可选参数：act(图像预处理),param(预处理参数)
+
+   示例：
+
+   裁图：
+   act=crop
+   param=wxh+x+y   例如：151x189+174+0
+
+   缩图：
+   act=resize
+   param=wxh[!]       例如：100x100(等比例)  200x200！（强制）
+
+   旋转：
+   act=rotate
+   param=[-]r          例如：90 (右旋90度)   -50(左旋50度)
+
+   method:post
+
+   成功返回
+
 ```json
     {
         "code": 200,
@@ -158,31 +177,33 @@ api
     }
 ```
    失败返回
-     
-     
+
+
 ```json
     {
       "code": 300,
       "msg": "filetype error,not supported txt"
     }
-      
+
 ```
 
 3.图像处理api  限制：内网调用
 
-   调用地址：http://nimg/{url}/manage-{act}?a={param} 
+   调用地址：http://nimg/{url}/manage-{act}?a={param}
+
+   method:get
 
    成功返回
-     
+
 ```json
     {
       "code": 200,
       "msg": "exec ok!"
     }
 ```
- 
+
     失败返回
-    
+
 ```json
     {
       "code": 301,
@@ -216,7 +237,7 @@ api
 
 编码| 说明
 --------------|------------------
-200|操作成功 
+200|操作成功
 300|上传错误
 301|处理错误
 404|资源不存在
