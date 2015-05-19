@@ -2,6 +2,7 @@ var fs = require("fs");
 var path = require("path");
 var config = require("./config");
 var im = require('imagemagick');
+var Q = require('q');
 
 
 var get_extension = function (filename) {
@@ -47,17 +48,17 @@ var decode_imgpath = function (imgPath) {
     var h = 0;
     if (a.length > 2) {
         w = parseInt(a[1]);
-        if(w>config.maxSide){
-            w=config.maxSide;
-        }else if(w<config.minSide){
-            w=config.minSide;
+        if (w > config.maxSide) {
+            w = config.maxSide;
+        } else if (w < config.minSide) {
+            w = config.minSide;
         }
 
         h = parseInt(a[2]);
-        if(h>config.maxSide){
-            h=config.maxSide;
-        }else if(h<config.minSide){
-            h=config.minSide;
+        if (h > config.maxSide) {
+            h = config.maxSide;
+        } else if (h < config.minSide) {
+            h = config.minSide;
         }
     }
 
@@ -157,6 +158,9 @@ var mkdirs = function (p, mode, made) {
 }
 
 
+
+
+
 /*****************************
  * 处理图片
  * @param srcPath
@@ -165,20 +169,8 @@ var mkdirs = function (p, mode, made) {
  * @param req
  * @param res
  */
-var img_convert = function (srcPath, cmd, parm, req, res) {
-    im.convert([srcPath, '-' + cmd, parm, srcPath],
-        function (err, stdout) {
-            if (err) {
-                var json = wrap_msg(301, 'exec fail!');
-                res.json(json);
-                res.end();
-            } else {
-                var json = wrap_msg(200, 'exec ok!');
-                res.json(json);
-                res.end();
-                console.log('stdout:', stdout);
-            }
-        });
+var img_convert = function (src, cmd, parm,cb) {
+    return im.convert([src, '-' + cmd, parm, src],cb);
 };
 
 /**********************
@@ -282,7 +274,7 @@ var read_size_img = function (srcPath, dstPath, f, w, h, x, req, res) {
             console.log('%s:%s', new Date(), 'dstPath exists!');
             read_img(dstPath, f, req, res);
         } else {
-           im.convert([srcPath, '-resize', w + 'X' + h + (x === 'f' ? '!' : (x === 's' ? '^' :'')), dstPath],
+            im.convert([srcPath, '-resize', w + 'X' + h + (x === 'f' ? '!' : (x === 's' ? '^' : '')), dstPath],
                 function (err, stdout) {
                     if (err) {
                         console.trace(err);
@@ -364,6 +356,124 @@ var read_img = function (realPath, filetype, req, res) {
 };
 
 
+/*****************
+ *get imagepath by img
+ * @param uid
+ * @param img
+ * @returns {string}
+ */
+var get_path = function (uid, img) {
+    var a = img.split(".");
+    if (a.length < 2)
+        return "";
+    return getimgpath(uid, a[0], a[1], 0, 0);
+}
+
+
+/*******************************
+ * file copy
+ * @param source
+ * @param target
+ * @param cb
+ */
+var file_copy = function (img, source, target) {
+    var defer = Q.defer();
+    //创建目录
+    var path = target.substring(0, target.length - 5);
+    console.log("path:" + path);
+    mkdirs(path, 0776, null);
+
+    var rd = fs.createReadStream(source);
+    rd.on("error", function (err) {
+        console.log("rd:" + err);
+        defer.reject({img: img, err: err});
+    });
+
+    var wr = fs.createWriteStream(target);
+    wr.on("error", function (err) {
+        defer.reject({img: img, err: err});
+    }).on("close", function () {
+        defer.resolve({img: img, msg: "ok"});
+    });
+
+    rd.pipe(wr);
+    return defer.promise;
+}
+
+
+/********************
+ * batch copy
+ * @param suid
+ * @param tuid
+ * @param img_arr
+ * @returns {promise|*|Q.promise}
+ */
+var batch_file_copy = function (tuid, img_arr) {
+    var defer = Q.defer();
+    var the_promises = [];
+
+    for (var i = 0; i < img_arr.length; i++) {
+        var img = img_arr[i];
+
+        if (!/^(\d{1,9}\/[0-9a-f]{32}(?:-\d+-\d+)?\.(jpg|jpeg|gif|png))$/.test(img)) {
+            defer.reject("bad img path:" + img);
+            break;
+        }
+
+        var suid = img.split('/')[0];
+        var img_name = img.split('/')[1];
+
+        if (suid == tuid) {
+            defer.reject("can't copy img to self!");
+            break;
+        }
+
+        var prom = file_copy(img, get_path(suid, img_name), get_path(tuid, img_name)).then(function (ret) {
+            console.log("copy success! suid:" + suid + "  tuid:" + tuid + " img:" + ret.img + " ret:" + ret.msg);
+            var name = ret.img.split('/')[1];
+            return {img: ret.img, ret: 'ok', url: tuid + "/" + name};
+        }, function (err) {
+            console.log("copy fail~ suid:" + suid + "  tuid:" + tuid + " img:" + err.img + " err:" + err.err);
+            return {img: img, ret: 'fail', err: 'img does not exist or has been deleted!'};
+        });
+
+        the_promises.push(prom);
+    }
+
+    Q.all(the_promises).then(function (ret) {
+        defer.resolve(ret);
+    }, function (err) {
+        defer.reject(err);
+    });
+    return defer.promise;
+}
+
+
+/**********
+ * copy img
+ * @param req
+ * @param res
+ * @returns {ServerResponse}
+ */
+var copy_img = function (req, res) {
+    var tuid = req.body.tuid;
+    var imgs = req.body.imgs;
+
+    if (!tuid || !imgs) {
+        var json = wrap_msg(301, 'param error!');
+        return res.json(json);
+    }
+    var img_arr = imgs.split(",");
+    batch_file_copy(tuid, img_arr).then(function (retlist) {
+        var json = wrap_msg(200, 'ok', {tuid: tuid, retlist: retlist});
+        return res.json(json);
+    }).catch(function (err) {
+        var json = wrap_msg(300, 'fail', "copy error:" + err);
+        return res.json(json);
+    });
+}
+
+exports.copy_img = copy_img;
 exports.img_convert = img_convert;
 exports.read_size_img = read_size_img;
 exports.del_img = del_img;

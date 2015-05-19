@@ -8,8 +8,6 @@ exports.maxFileSize=1024*1024;//1024kb 1mb
 exports.maxSide=1920; //最大截图边长
 exports.minSide=10; //最小截图边长
 
-
-
 exports.imgtypes={
         "gif": "image/gif",
         "jpeg": "image/jpeg",

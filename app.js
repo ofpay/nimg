@@ -7,6 +7,8 @@ var routes = require('./routes');
 var img = require('./routes/image');
 var manage = require('./routes/manage');
 var upload = require('./routes/upload');
+var admin = require('./routes/admin');
+
 var http = require('http');
 var path = require('path');
 var config = require("./config");
@@ -43,6 +45,9 @@ var start = function () {
     //index
     app.get('/', routes.index);
 
+    //copy
+    app.get('/copy', routes.copy);
+
     //get img
     app.get(/^\/\d{1,9}\/[0-9a-f]{32}(?:-\d+-\d+)?(-f|-s)?\.(jpg|jpeg|gif|png)$/, img.read);
 
@@ -53,6 +58,9 @@ var start = function () {
 
     //img upload
     app.post(/^\/\d{1,9}\/upload$/, upload.exec);
+
+    //admin
+    app.post('/admin', admin.exec);
 
 	//nginx monitor
 	app.get('/_jiankong.jsp', function (req, res) {

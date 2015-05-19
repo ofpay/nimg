@@ -5,5 +5,7 @@ block content
   p Welcome to #{appname}
   form(enctype='multipart/form-data', action='/#{userpath}/upload', method='post')
       | Choose file:
+      input(name='act',type='input',placeholder="act")
+      input(name='param',type='input',placeholder='param')
       input(name='userfile', type='file')
       input(type='submit', value='upload')
